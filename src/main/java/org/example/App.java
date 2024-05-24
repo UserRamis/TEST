@@ -8,6 +8,8 @@ import org.json.simple.parser.JSONParser;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 public class App {
     public static void main(String[] args) {
@@ -38,6 +40,9 @@ public class App {
         double totalTicketPrice = 0;
         int ticketCount = 0;
 
+        // Инициализация карты для хранения минимального времени полета для каждого перевозчика
+        Map<String, Double> minFlightDurationPerCarrier = new HashMap<>();
+
         for (Object obj : ticketsArray) {
             JSONObject ticket = (JSONObject) obj;
 
@@ -45,6 +50,7 @@ public class App {
             String destinationCity = (String) ticket.get("destination_name");
             double price = ((Number) ticket.get("price")).doubleValue();
             double flightDuration = calculateFlightDuration((String) ticket.get("departure_time"), (String) ticket.get("arrival_time"));
+            String carrier = (String) ticket.get("carrier");
 
             // Проверка на соответствие маршрута Владивосток - Тель-Авив
             if ("Владивосток".equals(originCity) && "Тель-Авив".equals(destinationCity)) {
@@ -53,6 +59,9 @@ public class App {
                 }
                 totalTicketPrice += price;
                 ticketCount++;
+
+                // Обновление минимального времени полета для текущего перевозчика
+                minFlightDurationPerCarrier.merge(carrier, flightDuration, Math::min);
             }
         }
 
@@ -71,6 +80,12 @@ public class App {
 
         double priceDifference = averagePrice - medianPrice;
         System.out.printf("Разница между средней и медианной ценами: %.2f рублей%n", priceDifference);
+
+        // Вывод минимального времени полета для каждого перевозчика
+        System.out.println("Минимальное время полета между городами Владивосток и Тель-Авив для каждого авиаперевозчика:");
+        for (Map.Entry<String, Double> entry : minFlightDurationPerCarrier.entrySet()) {
+            System.out.printf("Перевозчик: %s, Минимальное время полета: %.2f часов%n", entry.getKey(), entry.getValue());
+        }
     }
 
     static double calculateMedianPrice(JSONArray ticketsArray) {
